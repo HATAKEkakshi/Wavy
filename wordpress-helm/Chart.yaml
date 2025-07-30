@@ -1,0 +1,21 @@
+apiVersion: v2
+name: wordpress
+description: A Helm chart for WordPress with MySQL database
+type: application
+version: 0.1.0
+appVersion: "6.4"
+home: https://wordpress.org/
+sources:
+  - https://github.com/WordPress/WordPress
+  - https://github.com/docker-library/wordpress
+keywords:
+  - wordpress
+  - cms
+  - blog
+  - http
+  - web
+  - application
+  - php
+maintainers:
+  - name: WordPress Team
+    email: support@wordpress.org

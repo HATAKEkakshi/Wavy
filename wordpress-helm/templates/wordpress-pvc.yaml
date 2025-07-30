@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "wordpress.fullname" . }}-wordpress-pvc
+  labels:
+    {{- include "wordpress.wordpress.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.wordpress.storage.accessMode }}
+  {{- if .Values.wordpress.storage.storageClass }}
+  storageClassName: {{ .Values.wordpress.storage.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.wordpress.storage.size }}

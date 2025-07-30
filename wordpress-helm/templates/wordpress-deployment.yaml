@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wordpress.fullname" . }}-wordpress
+  labels:
+    {{- include "wordpress.wordpress.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "wordpress.wordpress.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "wordpress.wordpress.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "wordpress.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.wordpress.securityContext | nindent 8 }}
+      containers:
+      - name: wordpress
+        image: {{ .Values.wordpress.image.repository }}:{{ .Values.wordpress.image.tag }}
+        imagePullPolicy: {{ .Values.wordpress.image.pullPolicy }}
+        env:
+        - name: WORDPRESS_DB_HOST
+          value: {{ include "wordpress.fullname" . }}-mysql:{{ .Values.mysql.service.port }}
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecret | default (printf "%s-secret" (include "wordpress.fullname" .)) }}
+              key: mysql-password
+        - name: WORDPRESS_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecret | default (printf "%s-secret" (include "wordpress.fullname" .)) }}
+              key: mysql-user
+        - name: WORDPRESS_DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecret | default (printf "%s-secret" (include "wordpress.fullname" .)) }}
+              key: mysql-database
+        ports:
+        - name: http
+          containerPort: {{ .Values.wordpress.service.targetPort }}
+          protocol: TCP
+        livenessProbe:
+          {{- toYaml .Values.wordpress.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.wordpress.readinessProbe | nindent 10 }}
+        resources:
+          {{- toYaml .Values.wordpress.resources | nindent 10 }}
+        volumeMounts:
+        - name: wordpress-persistent-storage
+          mountPath: /var/www/html
+      volumes:
+      - name: wordpress-persistent-storage
+        persistentVolumeClaim:
+          claimName: {{ include "wordpress.fullname" . }}-wordpress-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
